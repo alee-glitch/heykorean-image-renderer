@@ -127,7 +127,7 @@ app.post('/render', async (req, res) => {
     const titleBlockH = titleLines.length * titleLineH;
 
     if (subtitle) {
-      ctx.font = `43px ${fontFamilyRegular}`;
+      ctx.font = `bold 43px ${fontFamilyRegular}`;
       const subLines = wrapWords(ctx, subtitle, maxW);
       const subLineH = 54;
       const subBlockH = subLines.length * subLineH;
