@@ -109,8 +109,8 @@ app.post('/render', async (req, res) => {
 
     const grad = ctx.createLinearGradient(0, HEIGHT * 0.42, 0, HEIGHT);
     grad.addColorStop(0, 'rgba(0,0,0,0)');
-    grad.addColorStop(0.45, 'rgba(0,0,0,0.62)');
-    grad.addColorStop(1, 'rgba(0,0,0,0.88)');
+    grad.addColorStop(0.45, 'rgba(0,0,0,0.50)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.78)');
     ctx.fillStyle = grad;
     ctx.fillRect(0, HEIGHT * 0.42, WIDTH, HEIGHT * 0.58);
 
@@ -132,7 +132,7 @@ app.post('/render', async (req, res) => {
       const subLineH = 54;
       const subBlockH = subLines.length * subLineH;
       const subStartY = HEIGHT - bottomPad - titleBlockH - 32 - subBlockH;
-      ctx.fillStyle = 'rgba(255,255,255,0.82)';
+      ctx.fillStyle = '#FFFFFF';
       ctx.textBaseline = 'top';
       subLines.forEach((line, i) => ctx.fillText(line, padX, subStartY + i * subLineH));
     }
