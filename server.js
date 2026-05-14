@@ -114,9 +114,9 @@ app.post('/render', async (req, res) => {
     ctx.fillStyle = grad;
     ctx.fillRect(0, HEIGHT * 0.42, WIDTH, HEIGHT * 0.58);
 
-    const padX = 80;
+    const padX = 90;
     const maxW = WIDTH - padX * 2;
-    const bottomPad = 180;
+    const bottomPad = 220;
 
     const fontFamily = fs.existsSync(regular) ? 'NotoKR-Bold' : 'sans-serif';
     const fontFamilyRegular = fs.existsSync(regular) ? 'NotoKR' : 'sans-serif';
@@ -131,7 +131,7 @@ app.post('/render', async (req, res) => {
       const subLines = wrapWords(ctx, subtitle, maxW);
       const subLineH = 54;
       const subBlockH = subLines.length * subLineH;
-      const subStartY = HEIGHT - bottomPad - titleBlockH - 20 - subBlockH;
+      const subStartY = HEIGHT - bottomPad - titleBlockH - 32 - subBlockH;
       ctx.fillStyle = 'rgba(255,255,255,0.82)';
       ctx.textBaseline = 'top';
       subLines.forEach((line, i) => ctx.fillText(line, padX, subStartY + i * subLineH));
