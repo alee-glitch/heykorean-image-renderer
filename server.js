@@ -114,9 +114,9 @@ app.post('/render', async (req, res) => {
     ctx.fillStyle = grad;
     ctx.fillRect(0, HEIGHT * 0.42, WIDTH, HEIGHT * 0.58);
 
-    const padX = 72;
+    const padX = 80;
     const maxW = WIDTH - padX * 2;
-    const bottomPad = 120;
+    const bottomPad = 180;
 
     const fontFamily = fs.existsSync(regular) ? 'NotoKR-Bold' : 'sans-serif';
     const fontFamilyRegular = fs.existsSync(regular) ? 'NotoKR' : 'sans-serif';
