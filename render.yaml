@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: heykorean-image-renderer
+    env: node
+    buildCommand: npm install && node setup-fonts.js
+    startCommand: npm start
+    plan: free
