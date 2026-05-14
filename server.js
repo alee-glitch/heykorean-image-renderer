@@ -121,13 +121,13 @@ app.post('/render', async (req, res) => {
     const fontFamily = fs.existsSync(regular) ? 'NotoKR-Bold' : 'sans-serif';
     const fontFamilyRegular = fs.existsSync(regular) ? 'NotoKR' : 'sans-serif';
 
-    ctx.font = `bold 86px ${fontFamily}`;
+    ctx.font = `bold 90px ${fontFamily}`;
     const titleLines = wrapWords(ctx, title, maxW);
-    const titleLineH = 108;
+    const titleLineH = 112;
     const titleBlockH = titleLines.length * titleLineH;
 
     if (subtitle) {
-      ctx.font = `40px ${fontFamilyRegular}`;
+      ctx.font = `43px ${fontFamilyRegular}`;
       const subLines = wrapWords(ctx, subtitle, maxW);
       const subLineH = 54;
       const subBlockH = subLines.length * subLineH;
@@ -138,7 +138,7 @@ app.post('/render', async (req, res) => {
     }
 
     const titleStartY = HEIGHT - bottomPad - titleBlockH;
-    ctx.font = `bold 86px ${fontFamily}`;
+    ctx.font = `bold 90px ${fontFamily}`;
     ctx.fillStyle = '#FFFFFF';
     ctx.textBaseline = 'top';
     titleLines.forEach((line, i) => ctx.fillText(line, padX, titleStartY + i * titleLineH));
