@@ -15,7 +15,6 @@ if (!fs.existsSync(fontsDir)) fs.mkdirSync(fontsDir);
 const regular = path.join(fontsDir, 'NotoSansCJK-Regular.ttc');
 const bold = path.join(fontsDir, 'NotoSansCJK-Bold.ttc');
 
-// Install fonts on startup
 function setupFonts() {
   if (fs.existsSync(regular) && fs.existsSync(bold)) {
     console.log('Fonts already exist, loading...');
@@ -115,31 +114,31 @@ app.post('/render', async (req, res) => {
     ctx.fillStyle = grad;
     ctx.fillRect(0, HEIGHT * 0.42, WIDTH, HEIGHT * 0.58);
 
-    const padX = 64;
+    const padX = 72;
     const maxW = WIDTH - padX * 2;
-    const bottomPad = 88;
+    const bottomPad = 120;
 
     const fontFamily = fs.existsSync(regular) ? 'NotoKR-Bold' : 'sans-serif';
     const fontFamilyRegular = fs.existsSync(regular) ? 'NotoKR' : 'sans-serif';
 
-    ctx.font = `bold 80px ${fontFamily}`;
+    ctx.font = `bold 86px ${fontFamily}`;
     const titleLines = wrapWords(ctx, title, maxW);
-    const titleLineH = 100;
+    const titleLineH = 108;
     const titleBlockH = titleLines.length * titleLineH;
 
     if (subtitle) {
-      ctx.font = `36px ${fontFamilyRegular}`;
+      ctx.font = `40px ${fontFamilyRegular}`;
       const subLines = wrapWords(ctx, subtitle, maxW);
-      const subLineH = 50;
+      const subLineH = 54;
       const subBlockH = subLines.length * subLineH;
-      const subStartY = HEIGHT - bottomPad - titleBlockH - 18 - subBlockH;
+      const subStartY = HEIGHT - bottomPad - titleBlockH - 20 - subBlockH;
       ctx.fillStyle = 'rgba(255,255,255,0.82)';
       ctx.textBaseline = 'top';
       subLines.forEach((line, i) => ctx.fillText(line, padX, subStartY + i * subLineH));
     }
 
     const titleStartY = HEIGHT - bottomPad - titleBlockH;
-    ctx.font = `bold 80px ${fontFamily}`;
+    ctx.font = `bold 86px ${fontFamily}`;
     ctx.fillStyle = '#FFFFFF';
     ctx.textBaseline = 'top';
     titleLines.forEach((line, i) => ctx.fillText(line, padX, titleStartY + i * titleLineH));
