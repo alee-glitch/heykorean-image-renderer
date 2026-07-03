@@ -219,6 +219,44 @@ function drawJobCard(ctx, f) {
   for (const r of rows) { r.draw(y); y += r.h + r.gap; }
 }
 
+// ── 커버 V2 (날짜 작게 + 히어로 크게 + 서브) ──
+function drawCoverV2(ctx, f) {
+  const barX = 84, textX = 116, rightPad = 84;
+  const maxW = WIDTH - textX - rightPad;
+  const bottomMargin = 120;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+
+  // 히어로 줄바꿈 (최대 2줄)
+  ctx.font = `bold 100px ${FB()}`;
+  let heroLines = wrapWords(ctx, f.hero || '', maxW);
+  const heroLineH = 116;
+  if (heroLines.length > 2) { heroLines = heroLines.slice(0, 2); heroLines[1] = ellipsize(ctx, heroLines[1], maxW); }
+
+  const rows = [];
+  if (f.date && f.date.trim()) {
+    rows.push({ h: 42, gap: 22, draw: (y) => {
+      ctx.font = `34px ${FR()}`; ctx.fillStyle = COLOR.muted; ctx.fillText(f.date, textX, y);
+    }});
+  }
+  rows.push({ h: heroLines.length * heroLineH, gap: (f.sub && f.sub.trim()) ? 24 : 0, draw: (y) => {
+    ctx.font = `bold 100px ${FB()}`; ctx.fillStyle = COLOR.ink;
+    heroLines.forEach((l, i) => ctx.fillText(l, textX, y + i * heroLineH));
+  }});
+  if (f.sub && f.sub.trim()) {
+    rows.push({ h: 52, gap: 0, draw: (y) => {
+      ctx.font = `46px ${FR()}`; ctx.fillStyle = COLOR.muted; ctx.fillText(ellipsize(ctx, f.sub, maxW), textX, y);
+    }});
+  }
+
+  let totalH = 0;
+  rows.forEach((r, i) => { totalH += r.h + (i < rows.length - 1 ? r.gap : 0); });
+  let y = HEIGHT - bottomMargin - totalH;
+  ctx.fillStyle = COLOR.brand;
+  ctx.fillRect(barX, y + 4, 6, totalH - 8);
+  for (const r of rows) { r.draw(y); y += r.h + r.gap; }
+}
+
 // ── 커버/레거시 레이아웃 (title/subtitle) ──
 function drawCover(ctx, title, subtitle) {
   const padX = 116;
@@ -262,7 +300,7 @@ app.post('/render', async (req, res) => {
     const b = req.body || {};
     const { image_url, job_title, title } = b;
     if (!image_url) return res.status(400).json({ error: 'image_url is required' });
-    if (!job_title && !title) return res.status(400).json({ error: 'job_title (or title for cover) is required' });
+    if (!job_title && !title && !b.hero) return res.status(400).json({ error: 'job_title, hero, or title is required' });
 
     const imgBuffer = await getImageBuffer(image_url);
     const resizedBuffer = await sharp(imgBuffer)
@@ -278,7 +316,7 @@ app.post('/render', async (req, res) => {
     drawEyebrow(ctx);
 
     if (job_title) {
-      // 새 공고 카드
+      // 공고 카드
       drawIndex(ctx, b.index, b.total);
       drawJobCard(ctx, {
         company: b.company,
@@ -289,8 +327,11 @@ app.post('/render', async (req, res) => {
         visa: b.visa,
         benefits: b.benefits,
       });
+    } else if (b.hero) {
+      // 커버 V2 (날짜 + 히어로 + 서브)
+      drawCoverV2(ctx, { date: b.date, hero: b.hero, sub: b.sub });
     } else {
-      // 커버/레거시 (title/subtitle)
+      // 레거시 (title/subtitle)
       drawCover(ctx, title, b.subtitle);
     }
 
