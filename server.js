@@ -228,9 +228,9 @@ function drawCoverV2(ctx, f) {
   ctx.textAlign = 'left';
 
   // 히어로 줄바꿈 (최대 2줄)
-  ctx.font = `bold 100px ${FB()}`;
+  ctx.font = `bold 116px ${FB()}`;
   let heroLines = wrapWords(ctx, f.hero || '', maxW);
-  const heroLineH = 116;
+  const heroLineH = 132;
   if (heroLines.length > 2) { heroLines = heroLines.slice(0, 2); heroLines[1] = ellipsize(ctx, heroLines[1], maxW); }
 
   const rows = [];
@@ -240,7 +240,7 @@ function drawCoverV2(ctx, f) {
     }});
   }
   rows.push({ h: heroLines.length * heroLineH, gap: (f.sub && f.sub.trim()) ? 24 : 0, draw: (y) => {
-    ctx.font = `bold 100px ${FB()}`; ctx.fillStyle = COLOR.ink;
+    ctx.font = `bold 116px ${FB()}`; ctx.fillStyle = COLOR.ink;
     heroLines.forEach((l, i) => ctx.fillText(l, textX, y + i * heroLineH));
   }});
   if (f.sub && f.sub.trim()) {
