@@ -4,7 +4,6 @@ const fetch = require('node-fetch');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
-const { execSync } = require('child_process');
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -12,36 +11,26 @@ app.use(express.json({ limit: '50mb' }));
 const fontsDir = path.join(__dirname, 'fonts');
 if (!fs.existsSync(fontsDir)) fs.mkdirSync(fontsDir);
 
-const regular = path.join(fontsDir, 'NotoSansCJK-Regular.ttc');
-const bold = path.join(fontsDir, 'NotoSansCJK-Bold.ttc');
+function resolveFont(base) {
+  for (const ext of ['.otf', '.ttf']) {
+    const p = path.join(fontsDir, base + ext);
+    if (fs.existsSync(p)) return p;
+  }
+  return path.join(fontsDir, base + '.otf'); // 기본값(없어도 아래에서 존재 검사)
+}
+const regular = resolveFont('Pretendard-Regular');
+const bold = resolveFont('Pretendard-Bold');
 
 function setupFonts() {
   if (fs.existsSync(regular) && fs.existsSync(bold)) {
-    console.log('Fonts already exist, loading...');
-    GlobalFonts.registerFromPath(regular, 'NotoKR');
-    GlobalFonts.registerFromPath(bold, 'NotoKR-Bold');
-    return;
-  }
-  console.log('Installing Korean fonts...');
-  try {
-    execSync('apt-get install -y fonts-noto-cjk', { stdio: 'pipe' });
-    const src = '/usr/share/fonts/opentype/noto';
-    if (fs.existsSync(`${src}/NotoSansCJK-Regular.ttc`)) {
-      fs.copyFileSync(`${src}/NotoSansCJK-Regular.ttc`, regular);
-      fs.copyFileSync(`${src}/NotoSansCJK-Bold.ttc`, bold);
-      console.log('Fonts installed via apt-get');
-    }
-  } catch (e) {
-    console.log('apt-get failed:', e.message);
-  }
-  if (fs.existsSync(regular) && fs.existsSync(bold)) {
-    GlobalFonts.registerFromPath(regular, 'NotoKR');
-    GlobalFonts.registerFromPath(bold, 'NotoKR-Bold');
-    console.log('Fonts loaded successfully!');
+    GlobalFonts.registerFromPath(regular, 'Pretendard');
+    GlobalFonts.registerFromPath(bold, 'Pretendard-Bold');
+    console.log('Pretendard fonts loaded successfully!');
   } else {
-    console.error('Font installation failed, Korean text may not render correctly');
+    console.error('Pretendard font files missing. Upload Pretendard-Regular and Pretendard-Bold (.otf or .ttf) to the /fonts folder.');
   }
 }
+
 setupFonts();
 
 const WIDTH = 1080;
@@ -56,8 +45,8 @@ const COLOR = {
   accent: '#2BD576',  // 급여·비자 강조 (초록)
 };
 
-const FB = () => (fs.existsSync(bold) ? 'NotoKR-Bold' : 'sans-serif');
-const FR = () => (fs.existsSync(regular) ? 'NotoKR' : 'sans-serif');
+const FB = () => (fs.existsSync(bold) ? 'Pretendard-Bold' : 'sans-serif');
+const FR = () => (fs.existsSync(regular) ? 'Pretendard' : 'sans-serif');
 
 function wrapWords(ctx, text, maxWidth) {
   const paragraphs = String(text).split(/\n/);
@@ -265,7 +254,7 @@ function drawCover(ctx, title, subtitle) {
 
 app.get('/health', (req, res) => {
   const fontsLoaded = fs.existsSync(regular) && fs.existsSync(bold);
-  res.json({ status: 'ok', fonts: fontsLoaded ? 'loaded' : 'missing' });
+  res.json({ status: 'ok', font: 'Pretendard', fonts: fontsLoaded ? 'loaded' : 'missing' });
 });
 
 app.post('/render', async (req, res) => {
