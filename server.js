@@ -140,7 +140,7 @@ function drawJobCard(ctx, f) {
   const textX = 116;
   const rightPad = 84;
   const maxW = WIDTH - textX - rightPad;
-  const bottomMargin = 100;
+  const bottomMargin = 180;
 
   ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
@@ -223,24 +223,24 @@ function drawJobCard(ctx, f) {
 function drawCoverV2(ctx, f) {
   const barX = 84, textX = 116, rightPad = 84;
   const maxW = WIDTH - textX - rightPad;
-  const bottomMargin = 120;
+  const bottomMargin = 190;
   ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
 
   // 히어로 줄바꿈 (최대 2줄)
-  ctx.font = `bold 116px ${FB()}`;
+  ctx.font = `bold 88px ${FB()}`;
   let heroLines = wrapWords(ctx, f.hero || '', maxW);
-  const heroLineH = 132;
+  const heroLineH = 100;
   if (heroLines.length > 2) { heroLines = heroLines.slice(0, 2); heroLines[1] = ellipsize(ctx, heroLines[1], maxW); }
 
   const rows = [];
   if (f.date && f.date.trim()) {
-    rows.push({ h: 42, gap: 22, draw: (y) => {
-      ctx.font = `34px ${FR()}`; ctx.fillStyle = COLOR.muted; ctx.fillText(f.date, textX, y);
+    rows.push({ h: 92, gap: 18, draw: (y) => {
+      ctx.font = `bold 78px ${FB()}`; ctx.fillStyle = COLOR.ink; ctx.fillText(f.date, textX, y);
     }});
   }
   rows.push({ h: heroLines.length * heroLineH, gap: (f.sub && f.sub.trim()) ? 24 : 0, draw: (y) => {
-    ctx.font = `bold 116px ${FB()}`; ctx.fillStyle = COLOR.ink;
+    ctx.font = `bold 88px ${FB()}`; ctx.fillStyle = COLOR.ink;
     heroLines.forEach((l, i) => ctx.fillText(l, textX, y + i * heroLineH));
   }});
   if (f.sub && f.sub.trim()) {
