@@ -168,6 +168,20 @@ function drawVisaPill(ctx, x, y, text) {
   return w;
 }
 
+// 실제 급여인지 판별 ($숫자 있고, 의미없는 값이 아닌 경우만 강조)
+function isRealSalary(s) {
+  if (!s) return false;
+  const t = String(s).trim();
+  // 무의미 급여 패턴
+  if (/협의|문의|추후|미정|별도|상담|후 결정|negotiable|tbd|doe/i.test(t)) return false;
+  // $1, 1달러 등 형식적 최소값
+  const nums = (t.match(/[0-9][0-9,]*/g) || []).map(n => Number(n.replace(/,/g,'')));
+  const maxNum = nums.length ? Math.max(...nums) : 0;
+  if (maxNum <= 1) return false;
+  // 숫자(달러/K 등)가 실제로 있으면 실급여
+  return /\$|[0-9]{2,}|k\b|usd|시급|연봉|월급|주급/i.test(t) && maxNum >= 2;
+}
+
 function drawJobCard(ctx, f) {
   const barX = 84;
   const textX = 116;
@@ -226,9 +240,12 @@ function drawJobCard(ctx, f) {
   // 급여 (초록 강조 텍스트)
   const hasSalary = f.salary && f.salary.trim();
   const hasVisa = f.visa && f.visa.trim();
+  const salaryReal = hasSalary && isRealSalary(f.salary);
   if (hasSalary) {
     rows.push({ h: 56, gap: hasVisa ? 18 : 22, draw: (y) => {
-      ctx.font = `bold 46px ${FB()}`; ctx.fillStyle = COLOR.accent;
+      // 실제 급여만 초록 강조, "면접 후 협의"·$1 등은 회색
+      ctx.font = salaryReal ? `bold 46px ${FB()}` : `40px ${FR()}`;
+      ctx.fillStyle = salaryReal ? COLOR.accent : COLOR.muted;
       ctx.fillText(f.salary, textX, y);
     }});
   }
