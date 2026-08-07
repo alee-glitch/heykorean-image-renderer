@@ -39,8 +39,8 @@ const HEIGHT = 1350;
 // ── 디자인 토큰 ──
 const COLOR = {
   ink: '#FFFFFF',
-  muted: 'rgba(255,255,255,0.76)',
-  faint: 'rgba(255,255,255,0.60)',
+  muted: 'rgba(255,255,255,0.85)',
+  faint: 'rgba(255,255,255,0.72)',
   brand: '#0096FA',   // HeyKorean 블루
   accent: '#2BD576',  // 급여·비자 강조 (초록)
 };
@@ -96,12 +96,12 @@ function drawBackground(ctx, bgImage) {
   ctx.fillStyle = top;
   ctx.fillRect(0, 0, WIDTH, HEIGHT * 0.20);
   // 하단 스크림
-  const bot = ctx.createLinearGradient(0, HEIGHT * 0.40, 0, HEIGHT);
+  const bot = ctx.createLinearGradient(0, HEIGHT * 0.33, 0, HEIGHT);
   bot.addColorStop(0, 'rgba(8,10,13,0)');
-  bot.addColorStop(0.55, 'rgba(8,10,13,0.72)');
-  bot.addColorStop(1, 'rgba(8,10,13,0.95)');
+  bot.addColorStop(0.45, 'rgba(8,10,13,0.80)');
+  bot.addColorStop(1, 'rgba(8,10,13,0.97)');
   ctx.fillStyle = bot;
-  ctx.fillRect(0, HEIGHT * 0.40, WIDTH, HEIGHT * 0.60);
+  ctx.fillRect(0, HEIGHT * 0.33, WIDTH, HEIGHT * 0.67);
 }
 
 // 상단 브랜드 아이브로우 (전 슬라이드 고정 → 시리즈 인지)
@@ -135,6 +135,39 @@ function drawIndex(ctx, index, total) {
 }
 
 // ── 공고 카드 레이아웃 ──
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// 비자 pill (테두리 배지: [ VISA {값} ])
+function drawVisaPill(ctx, x, y, text) {
+  const h = 54, r = 12, padX = 22, gap = 12;
+  ctx.font = `bold 30px ${FB()}`;
+  const label = 'VISA';
+  const labelW = ctx.measureText(label).width;
+  ctx.font = `500 30px ${FR()}`;
+  const textW = ctx.measureText(text).width;
+  const w = padX * 2 + labelW + gap + textW;
+  roundRect(ctx, x, y, w, h, r);
+  ctx.fillStyle = 'rgba(43,213,118,0.14)';
+  ctx.fill();
+  ctx.strokeStyle = COLOR.accent; ctx.lineWidth = 2; ctx.stroke();
+  const ty = y + h / 2;
+  ctx.textBaseline = 'middle';
+  ctx.font = `bold 30px ${FB()}`; ctx.fillStyle = COLOR.accent;
+  ctx.fillText(label, x + padX, ty);
+  ctx.font = `500 30px ${FR()}`; ctx.fillStyle = COLOR.ink;
+  ctx.fillText(text, x + padX + labelW + gap, ty);
+  ctx.textBaseline = 'top';
+  return w;
+}
+
 function drawJobCard(ctx, f) {
   const barX = 84;
   const textX = 116;
@@ -145,7 +178,7 @@ function drawJobCard(ctx, f) {
   ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
 
-  // 타이틀 줄바꿈(최대 3줄) 사전 계산
+  // 타이틀 줄바꿈(최대 3줄)
   ctx.font = `bold 84px ${FB()}`;
   let titleLines = wrapWords(ctx, f.job_title || '', maxW);
   const titleLineH = 100;
@@ -154,21 +187,30 @@ function drawJobCard(ctx, f) {
     titleLines[2] = ellipsize(ctx, titleLines[2], maxW);
   }
 
-  // 행 구성 (존재하는 것만)
   const rows = [];
+  // 회사명 (존재감 ↑: 36px Bold)
   if (f.company && f.company.trim()) {
-    rows.push({ h: 42, gap: 20, draw: (y) => {
-      ctx.font = `32px ${FR()}`; ctx.fillStyle = COLOR.muted;
+    rows.push({ h: 48, gap: 18, identity: true, draw: (y) => {
+      ctx.font = `bold 36px ${FB()}`; ctx.fillStyle = COLOR.muted;
       ctx.fillText(ellipsize(ctx, f.company, maxW), textX, y);
     }});
   }
-  rows.push({ h: titleLines.length * titleLineH, gap: 30, draw: (y) => {
+  // 직무 (히어로)
+  const hasSummary = f.job_summary && f.job_summary.trim() && titleLines.length < 3;
+  rows.push({ h: titleLines.length * titleLineH, gap: hasSummary ? 12 : 34, identity: true, draw: (y) => {
     ctx.font = `bold 84px ${FB()}`; ctx.fillStyle = COLOR.ink;
     titleLines.forEach((l, i) => ctx.fillText(l, textX, y + i * titleLineH));
   }});
-  // region · employment
+  // 업무 요약 키워드 (직무 밑)
+  if (hasSummary) {
+    rows.push({ h: 44, gap: 36, draw: (y) => {
+      ctx.font = `32px ${FR()}`; ctx.fillStyle = COLOR.muted;
+      ctx.fillText(ellipsize(ctx, f.job_summary, maxW), textX, y);
+    }});
+  }
+  // 지역 · 고용형태
   const hasType = f.employment_type && f.employment_type.trim();
-  rows.push({ h: 50, gap: 24, draw: (y) => {
+  rows.push({ h: 50, gap: 22, draw: (y) => {
     let x = textX;
     if (f.region && f.region.trim()) {
       ctx.font = `bold 40px ${FB()}`; ctx.fillStyle = COLOR.ink;
@@ -181,24 +223,22 @@ function drawJobCard(ctx, f) {
       ctx.fillText(ellipsize(ctx, f.employment_type, maxW - (x - textX)), x, y + 4);
     }
   }});
-  // salary · visa (초록 강조)
+  // 급여 (초록 강조 텍스트)
   const hasSalary = f.salary && f.salary.trim();
   const hasVisa = f.visa && f.visa.trim();
-  if (hasSalary || hasVisa) {
-    rows.push({ h: 56, gap: 22, draw: (y) => {
-      let x = textX;
-      if (hasSalary) {
-        ctx.font = `bold 46px ${FB()}`; ctx.fillStyle = COLOR.accent;
-        ctx.fillText(f.salary, x, y); x += ctx.measureText(f.salary).width;
-      }
-      if (hasVisa) {
-        if (hasSalary) { ctx.font = `34px ${FR()}`; ctx.fillStyle = COLOR.faint; ctx.fillText('   ·   ', x, y + 8); x += ctx.measureText('   ·   ').width; }
-        ctx.font = `34px ${FR()}`; ctx.fillStyle = COLOR.accent;
-        ctx.fillText(f.visa, x, y + 8);
-      }
+  if (hasSalary) {
+    rows.push({ h: 56, gap: hasVisa ? 18 : 22, draw: (y) => {
+      ctx.font = `bold 46px ${FB()}`; ctx.fillStyle = COLOR.accent;
+      ctx.fillText(f.salary, textX, y);
     }});
   }
-  // benefits (한 줄)
+  // 비자 (pill 배지로 분리)
+  if (hasVisa) {
+    rows.push({ h: 54, gap: 22, draw: (y) => {
+      drawVisaPill(ctx, textX, y, ellipsize(ctx, f.visa, maxW - 200));
+    }});
+  }
+  // 복지 (한 줄)
   if (f.benefits && f.benefits.trim()) {
     rows.push({ h: 40, gap: 0, draw: (y) => {
       ctx.font = `29px ${FR()}`; ctx.fillStyle = COLOR.faint;
@@ -210,10 +250,18 @@ function drawJobCard(ctx, f) {
   let totalH = 0;
   rows.forEach((r, i) => { totalH += r.h + (i < rows.length - 1 ? r.gap : 0); });
   let y = HEIGHT - bottomMargin - totalH;
+  const blockTop = y;
 
-  // 좌측 브랜드 바
+  // 짧은 브랜드 accent 바: 회사명+직무(identity) 영역까지만
+  let identityH = 0;
+  for (let i = 0; i < rows.length; i++) {
+    identityH += rows[i].h;
+    const nextIsIdentity = (i + 1 < rows.length) && rows[i + 1].identity;
+    if (rows[i].identity && !nextIsIdentity) break;
+    identityH += rows[i].gap;
+  }
   ctx.fillStyle = COLOR.brand;
-  ctx.fillRect(barX, y + 4, 6, totalH - 8);
+  ctx.fillRect(barX, blockTop + 4, 6, Math.max(identityH - 8, 40));
 
   // 행 그리기
   for (const r of rows) { r.draw(y); y += r.h + r.gap; }
@@ -321,6 +369,7 @@ app.post('/render', async (req, res) => {
       drawJobCard(ctx, {
         company: b.company,
         job_title: b.job_title,
+        job_summary: b.job_summary,
         region: b.region,
         employment_type: b.employment_type,
         salary: b.salary,
