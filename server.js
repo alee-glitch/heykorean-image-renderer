@@ -412,5 +412,8 @@ app.post('/render', async (req, res) => {
   }
 });
 
+// 캐러셀 템플릿 V2 (POST /render/v2)
+require('./v2')(app);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Image renderer running on port ${PORT}`));
