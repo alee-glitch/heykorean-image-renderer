@@ -292,24 +292,69 @@ async function drawJob(ctx, b) {
     ctx.fillText(tag, W - PX, baseline(footTop, normalLH(30), 30)); ctx.textAlign = 'left'; }
 }
 
+// ── 목록 장 ──
+// 상세 카드로 쓰기엔 원문이 짧은 업종(식당, 네일, 병원 사무 등)용. 한 장에 5곳까지, 공고의 등록 칸 값만 싣는다.
+function drawList(ctx, b) {
+  const ax = axisOf(b.axis);
+  ctx.fillStyle = C.white; ctx.fillRect(0, 0, W, H);
+  text(ctx, clean(b.theme), PX, PT, normalLH(52), 700, 52, ax.accent, -0.035);
+  if (b.page && b.pages) {
+    drawSegs(ctx, [
+      { t: String(b.page).padStart(2, '0'), w: 700, size: 30, color: C.ink },
+      { t: ' / ' + String(b.pages).padStart(2, '0'), w: 500, size: 30, color: C.gray },
+    ], W - PX, baseline(PT + (normalLH(52) - normalLH(30)) / 2, normalLH(30), 30), 'right');
+  }
+  const items = (Array.isArray(b.items) ? b.items : []).slice(0, 5);
+  const top = 206, rowH = 200, start = Number(b.start_index) || 1, tx = PX + 76;
+  items.forEach((it, i) => {
+    const y = top + i * rowH;
+    if (i > 0) { ctx.fillStyle = C.line; ctx.fillRect(PX, y, CW, 1); }
+    text(ctx, String(start + i).padStart(2, '0'), PX, y + 44, 62, 700, 30, ax.accent);
+    const role = clean(it.role);
+    const rs = fitSize(ctx, role, 700, 52, 38, -0.035, W - PX - tx);
+    text(ctx, role, tx, y + 34, 62, 700, rs, C.ink, -0.035);
+    const dl = clean(it.deadline);
+    drawSegs(ctx, [
+      { t: clean(it.pay), w: 700, size: 38, ls: -0.03, color: C.green },
+      { t: clean(it.pay_unit), w: 500, size: 30, color: C.green, gap: 12 },
+      { t: dl ? '  ·  ' + dl : '', w: 500, size: 30, color: C.gray },
+    ], tx, baseline(y + 100, 46, 38));
+    setFont(ctx, 500, 30);
+    const sub = ellipsize(ctx, [clean(it.company), clean(it.city)].filter(Boolean).join(' · '), W - PX - tx);
+    text(ctx, sub, tx, y + 150, normalLH(30), 500, 30, C.gray);
+  });
+  const footTop = H - PB - normalLH(30);
+  text(ctx, clean(b.brand || '헤이코리안 구인구직'), PX, footTop, normalLH(30), 600, 30, C.gray);
+  const tag = clean(b.date);
+  if (tag) { setFont(ctx, 600, 30); ctx.fillStyle = C.gray; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(tag + ' 기준', W - PX, baseline(footTop, normalLH(30), 30)); ctx.textAlign = 'left'; }
+}
+
 // ── 마지막 장 ──
 function drawCta(ctx, b) {
   const ax = axisOf(b.axis);
   ctx.fillStyle = ax.tint; ctx.fillRect(0, 0, W, H);
   drawDateRow(ctx, b.date, b.day, clean(b.label || ax.label), ax.accent);
   const LH = 118 * 1.22, top = 449;
-  const num = clean(b.headline_num || (b.open_total != null ? `${Number(b.open_total).toLocaleString('en-US')}건` : ''));
+  const hasTotal = b.open_total != null && b.open_total !== '';
+  const custom = b.headline_pre || b.headline_num || b.headline_post;
+  const num = clean(b.headline_num || (hasTotal ? `${Number(b.open_total).toLocaleString('en-US')}건` : ''));
+  const pre = clean(b.headline_pre || (hasTotal || custom ? '지금' : '다른 공고도'));
+  const post = clean(b.headline_post || (hasTotal || custom ? '열려 있어요' : '더 있어요'));
   drawSegs(ctx, [
-    { t: clean(b.headline_pre || '지금') + ' ', w: 700, size: 118, ls: -0.04, color: C.ink },
+    { t: pre + (num ? ' ' : ''), w: 700, size: 118, ls: -0.04, color: C.ink },
     { t: num, w: 700, size: 118, ls: -0.04, color: ax.accent },
   ], PX, baseline(top, LH, 118));
-  text(ctx, clean(b.headline_post || '열려 있어요'), PX, top + LH, LH, 700, 118, C.ink, -0.04);
-  const body = arr(b.body && b.body.length ? b.body : ['다섯 곳은 그중 일부예요.', '지역과 직군으로 걸러서 보려면', '프로필 링크로 가면 돼요.']).slice(0, 3);
+  text(ctx, post, PX, top + LH, LH, 700, 118, C.ink, -0.04);
+  const tail = ['지역과 직군으로 걸러서 보려면', '프로필 링크로 가면 돼요.'];
+  const body = arr(b.body && b.body.length ? b.body : (hasTotal && b.count ? [`${b.count}곳은 그중 일부예요.`, ...tail] : tail)).slice(0, 3);
   body.forEach((l, i) => text(ctx, l, PX, top + LH * 2 + 40 + i * 64, 64, 500, 40, C.sub));
   const footTop = H - PB - normalLH(30);
-  const note = clean(b.note == null ? '공고 내용은 게시일 기준이에요. 지원 전에 회사에 확인하세요.' : b.note);
+  const dd = String(b.data_date || '').split('.');
+  const asOf = dd.length === 2 ? `${Number(dd[0])}월 ${Number(dd[1])}일` : '게시일';
+  const note = clean(b.note == null ? `공고 내용은 ${asOf} 기준이에요. 지원 전에 회사에 확인하세요.` : b.note);
   if (note) { setFont(ctx, 500, 30); text(ctx, ellipsize(ctx, note, CW), PX, footTop - 48, normalLH(30), 500, 30, C.gray); }
-  text(ctx, clean(b.foot || '저장해두고 천천히 보세요'), PX, footTop, normalLH(30), 600, 30, C.gray);
+  text(ctx, clean(b.foot || '저장해두고 관심 있는 공고에 지원하세요'), PX, footTop, normalLH(30), 600, 30, C.gray);
 }
 
 // 카드에 싣지 않는 표현. 성별·나이 조건은 미국 고용 차별 금지 규정에 걸릴 수 있고,
@@ -368,6 +413,21 @@ function checkCard(b) {
       const plan = planJob(ctx, b, 0);
       if (plan.end > H - PB - normalLH(30) - 20) issues.push({ field: 'card', problem: 'overflow', detail: '내용이 카드 높이를 넘어요. 항목을 줄여요.' });
     }
+  } else if (b.type === 'list') {
+    const items = Array.isArray(b.items) ? b.items : [];
+    need('theme', clean(b.theme), '주제가 없어요.');
+    need('items', items.length >= 1 && items.length <= 5, `목록 한 장에는 1~5곳이 들어가요. 지금 ${items.length}곳이에요.`);
+    items.forEach((it, i) => {
+      const f = `items[${i}]`;
+      need(f, clean(it.role) && clean(it.company) && clean(it.city), '직무, 회사, 근무 도시가 모두 있어야 해요.');
+      const pi = payInfo(it.pay, it.pay_unit);
+      // 목록 장은 급여를 나란히 놓고 보는 형식이라 금액이 있는 공고만 싣는다
+      if (pi.kind !== 'amount') issues.push({ field: f, problem: 'pay_required', detail: '목록 형식에는 급여 금액이 있는 공고만 실어요.' });
+      else if (pi.bad) issues.push({ field: f, problem: 'invalid_pay', detail: pi.bad + ' 이 공고는 쓰지 않아요.' });
+      if (clean(it.role)) over(f + '.role', it.role, 700, 38, -0.035, CW - 76, '직무명이');
+      const hit = BLOCKED.find((r) => r.re.test(clean(it.role)));
+      if (hit) issues.push({ field: f, problem: 'not_allowed', detail: hit.why });
+    });
   } else if (b.type === 'cover') {
     need('date', clean(b.date), '날짜가 없어요.');
     need('theme', clean(b.theme), '주제가 없어요.');
@@ -380,7 +440,7 @@ function checkCard(b) {
     need('date', clean(b.date), '날짜가 없어요.');
     arr(b.body).forEach((t, i) => over(`body[${i}]`, t, 500, 40, -0.02, CW, '본문 줄이'));
   } else {
-    issues.push({ field: 'type', problem: 'missing', detail: 'type 은 cover | job | cta 중 하나예요.' });
+    issues.push({ field: 'type', problem: 'missing', detail: 'type 은 cover | job | list | cta 중 하나예요.' });
   }
   return { ok: issues.length === 0, issues };
 }
@@ -393,6 +453,7 @@ function planBundle(b) {
   const issues = [], rejected = [];
   const meta = { axis: b.axis, date: b.date, day: b.day, theme: b.theme };
   if (!clean(b.date) || !clean(b.theme)) issues.push({ field: 'bundle', problem: 'missing', detail: '날짜와 주제가 필요해요.' });
+  if (b.format === 'list') return planList(b, meta, issues);
   const max = Math.min(Number(b.max) || 5, 5), min = Number(b.min) || 3;
   const seen = new Set(), perCat = {}, picked = [];
   for (const j of Array.isArray(b.jobs) ? b.jobs : []) {
@@ -415,7 +476,40 @@ function planBundle(b) {
   const cards = !ok ? [] : [
     { ...meta, type: 'cover', count: picked.length, open_total: b.open_total, logos: picked.map((c) => ({ url: c.logo_url, name: c.company })) },
     ...picked.map((c, i) => ({ ...c, index: i + 1, total: picked.length })),
-    { ...meta, type: 'cta', open_total: b.open_total },
+    { ...meta, type: 'cta', open_total: b.open_total, count: picked.length, data_date: b.data_date },
+  ];
+  return { ok, count: picked.length, issues, rejected, cards };
+}
+
+// 목록형 묶음: 원문이 짧은 업종. 5~15곳, 한 장에 5곳까지, 장은 고르게 나눈다.
+function planList(b, meta, issues) {
+  const rejected = [], picked = [], seen = new Set();
+  const max = Math.min(Number(b.max) || 15, 15), min = Math.max(Number(b.min) || 5, 5);
+  for (const j of Array.isArray(b.jobs) ? b.jobs : []) {
+    const item = { role: j.role, company: j.company, city: j.where, pay: j.pay, pay_unit: j.pay_unit, deadline: j.deadline, source_url: j.source_url };
+    const name = clean(j.company);
+    const key = name.toLowerCase().replace(/[^a-z0-9가-힣]/g, '');
+    const res = checkCard({ type: 'list', theme: meta.theme, items: [item] });
+    let why = res.ok ? null : res.issues.map((i) => i.detail).join(' ');
+    if (!why && seen.has(key)) why = '같은 회사가 이미 묶음에 있어요.';
+    if (!why && picked.length >= max) why = `목록형은 ${max}곳까지예요.`;
+    if (why) { rejected.push({ company: name, role: clean(j.role), source_url: j.source_url, reason: why }); continue; }
+    seen.add(key); picked.push({ ...item, logo_url: j.logo_url });
+  }
+  if (picked.length < min) issues.push({ field: 'bundle', problem: 'too_few', detail: `기준을 통과한 공고가 ${picked.length}곳이에요. 목록형은 ${min}곳이 안 되면 이 주제는 건너뛰어요.` });
+  const ok = issues.length === 0;
+  if (!ok) return { ok, count: picked.length, issues, rejected, cards: [] };
+  const pages = Math.ceil(picked.length / 5), base = Math.floor(picked.length / pages), extra = picked.length % pages;
+  const lists = []; let at = 0;
+  for (let p = 0; p < pages; p++) {
+    const n = base + (p < extra ? 1 : 0);
+    lists.push({ ...meta, type: 'list', page: p + 1, pages, start_index: at + 1, items: picked.slice(at, at + n).map(({ logo_url, ...it }) => it) });
+    at += n;
+  }
+  const cards = [
+    { ...meta, type: 'cover', count: picked.length, open_total: b.open_total, logos: picked.slice(0, 5).map((c) => ({ url: c.logo_url, name: c.company })) },
+    ...lists,
+    { ...meta, type: 'cta', open_total: b.open_total, count: picked.length, data_date: b.data_date },
   ];
   return { ok, count: picked.length, issues, rejected, cards };
 }
@@ -423,7 +517,7 @@ function planBundle(b) {
 // ── 진입점 ──
 async function renderV2(b) {
   b = b || {};
-  if (!['cover', 'job', 'cta'].includes(b.type)) throw Object.assign(new Error('type 은 cover | job | cta 중 하나'), { status: 400 });
+  if (!['cover', 'job', 'list', 'cta'].includes(b.type)) throw Object.assign(new Error('type 은 cover | job | list | cta 중 하나'), { status: 400 });
   // strict 가 기본. 기준 미달·넘침이 있으면 그리지 않는다. 시험용으로만 "strict": false 를 쓴다.
   if (b.strict !== false) {
     const res = checkCard(b);
@@ -432,6 +526,7 @@ async function renderV2(b) {
   const canvas = createCanvas(W, H); const ctx = canvas.getContext('2d');
   if (b.type === 'cover') await drawCover(ctx, b);
   else if (b.type === 'job') await drawJob(ctx, b);
+  else if (b.type === 'list') drawList(ctx, b);
   else drawCta(ctx, b);
   return canvas.toBuffer('image/png');
 }
