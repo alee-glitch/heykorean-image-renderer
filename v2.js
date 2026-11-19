@@ -181,9 +181,15 @@ async function drawCover(ctx, b) {
   const sub = clean(b.sub || (b.open_total != null ? `지금 열려 있는 ${Number(b.open_total).toLocaleString('en-US')}건에서 골랐어요` : ''));
   if (sub) { setFont(ctx, 500, 40); text(ctx, ellipsize(ctx, sub, CW), PX, top1 + LH * 2 + 38, normalLH(40), 500, 40, C.sub); }
 
-  const logos = (Array.isArray(b.logos) ? b.logos : []).slice(0, 5);
+  // 로고는 한 줄에 5개까지. 넘으면 줄을 늘리고 줄마다 고르게 나눈다(6곳 3+3, 7곳 4+3, 15곳 5+5+5).
+  // 맨 아래 줄은 늘 같은 자리(1110)에 두고 위로 쌓는다.
+  const logos = (Array.isArray(b.logos) ? b.logos : []).slice(0, 15);
   const imgs = await Promise.all(logos.map((l) => fetchLogo(l && (l.url || l.logo))));
-  logos.forEach((l, i) => drawTile(ctx, PX + i * 184, 1110, imgs[i], l && l.name, false));
+  const rows = Math.max(1, Math.ceil(logos.length / 5)), per = Math.ceil(logos.length / rows);
+  logos.forEach((l, i) => {
+    const r = Math.floor(i / per), c = i % per;
+    drawTile(ctx, PX + c * 184, 1110 - (rows - 1 - r) * 100, imgs[i], l && l.name, false);
+  });
   text(ctx, clean(b.brand || '헤이코리안 구인구직'), PX, 1230, normalLH(30), 600, 30, C.gray);
 }
 
@@ -507,7 +513,7 @@ function planList(b, meta, issues) {
     at += n;
   }
   const cards = [
-    { ...meta, type: 'cover', count: picked.length, open_total: b.open_total, logos: picked.slice(0, 5).map((c) => ({ url: c.logo_url, name: c.company })) },
+    { ...meta, type: 'cover', count: picked.length, open_total: b.open_total, logos: picked.map((c) => ({ url: c.logo_url, name: c.company })) },
     ...lists,
     { ...meta, type: 'cta', open_total: b.open_total, count: picked.length, data_date: b.data_date },
   ];
